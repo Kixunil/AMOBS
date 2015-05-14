@@ -71,6 +71,17 @@ def parseTable(f):
     while len(line) > 0:
         line = f.next().strip()
 
+        row = []
+        val = ""
+        for char in line[1:]:
+            if char == '|':
+                row.append(val)
+                val = ""
+            else:
+                val += char
+
+        print row
+
 # Program beginning
 # Open log
 f = open("final set/A.txt")
