@@ -31,10 +31,10 @@ def slice_columns(header, b, e, prefix):
     while i < e:
         if header[0][i] == '|':
             if len(header) > 1:
-                for f in slice_columns(header[1:], last, i, prefix + header[0][last:i].strip() + " "):
+                for f in slice_columns(header[1:], last, i, (prefix.strip() + " " + header[0][last:i].strip()).strip()):
                     yield f
             else:
-                yield prefix + header[0][last:i].strip()
+                yield (prefix.strip() + " " +  header[0][last:i].strip()).strip()
 
             last = i + 1
 
@@ -42,10 +42,10 @@ def slice_columns(header, b, e, prefix):
 
     if last < e:
         if len(header) > 1:
-            for f in slice_columns(header[1:], last, i, prefix + header[0][last:i].strip() + " "):
+            for f in slice_columns(header[1:], last, i, (prefix.strip() + " " + header[0][last:i].strip()).strip()):
                 yield f
         else:
-            yield prefix + header[0][last:i].strip()
+            yield (prefix.strip() + " " + header[0][last:i].strip()).strip()
 
 # This function parses any table found inside log
 def parseTable(f):
