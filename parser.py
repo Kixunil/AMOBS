@@ -74,15 +74,7 @@ def parseTable(f, conn, log_id, table_id):
     # Read table rows
     row_id = 1
     while len(line) > 0:
-
-        row = []
-        val = ""
-        for char in line[1:]:
-            if char == '|':
-                row.append(val)
-                val = ""
-            else:
-                val += char
+        row = line[1:-1].split('|')
 
         # Store row into database
         for i in range(len(row)):
