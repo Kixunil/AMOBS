@@ -110,7 +110,7 @@ findDate(f)
 kvRegex = re.compile(".*[:=].*")
 
 # By convention IDs in SQL database count from 1, not 0
-log_id = 1
+log_id = 0
 table_id = 1
 
 # Open database file
@@ -146,9 +146,9 @@ try:
             log_type_b = line.find("0x")
             log_type_e = line[log_type_b:].find(" ")
             log_type = int(line[log_type_b:log_type_b+log_type_e], 0)
-            conn.execute('''INSERT INTO logs (log_id, log_type, date) VALUES (?, ?, ?)''', [log_id, log_type, datePar] )
             log_id += 1
             table_id = 1
+            conn.execute('''INSERT INTO logs (log_id, log_type, date) VALUES (?, ?, ?)''', [log_id, log_type, datePar] )
 
         # Check if line is beginning of a table
         elif line[0] == '-' or line[0] == '|':
