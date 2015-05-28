@@ -1,11 +1,21 @@
-#!/usr/bin/python
+# -*- coding: utf8 -*-
 
 import re
+import sys
 import sqlite3
+import dateutil.parser as dparser
+
+try:
+    logPath = sys.argv[1]
+    dataPath = sys.argv[2]
+except Exception as e:
+    print "NO NO NO argumenty!"
+    sys.exit(1)
+
 
 # Regex for finding the beginning of log
 dateRegex = re.compile(r"^[1-9][0-9]{3,} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) +[1-9][0-9]? +[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.[0-9]{3}")
-numberRegex = re.compile(r"^-?[0-9]+(,[0-9]+)")
+numberRegex = re.compile(r"^[-+]?\d*\,\d+|\d+$")
 
 # Finds next beginning of the log, skipping everything else
 def findDate(f):
@@ -25,7 +35,7 @@ def parseKV(l):
 
     return key.strip(), val.strip()
 
-# Recursive function which creates list of columns
+# Recursive function which creates list of col
 def slice_columns(header, b, e, prefix):
     last = b
     i = b
@@ -78,11 +88,11 @@ def parseTable(f, conn, log_id, table_id):
 
         # Store row into database
         for i in range(len(row)):
-            if numberRegex.match(row[i]):
-                row[i] = row[i].replace(",", ".")
-                conn.execute('''INSERT INTO tables_num VALUES (?, ?, ?, ?, ?)''', [log_id, table_id, cols[i], row_id, float(row[i])])
+            if numberRegex.match(row[i].strip()):
+                row[i] = row[i].replace(",", ".").strip()
+                conn.execute('''INSERT INTO tables (log_id, table_id, table_col_name, table_row_id, value_num) VALUES (?, ?, ?, ?, ?)''', [log_id, table_id, cols[i], row_id, float(row[i])])
             else:
-                conn.execute('''INSERT INTO tables_str VALUES (?, ?, ?, ?, ?)''', [log_id, table_id, cols[i], row_id, row[i]])
+                conn.execute('''INSERT INTO tables (log_id, table_id, table_col_name, table_row_id, value_str) VALUES (?, ?, ?, ?, ?)''', [log_id, table_id, cols[i], row_id, row[i].strip()])
 
         line = f.next().strip()
         row_id += 1
@@ -91,7 +101,7 @@ def parseTable(f, conn, log_id, table_id):
 
 # Program beginning
 # Open log
-f = open("final set/A.txt")
+f = open(logPath)
 
 # Find first log line, skip anything else at the beginning
 findDate(f)
@@ -104,20 +114,18 @@ log_id = 1
 table_id = 1
 
 # Open database file
-conn = sqlite3.connect("logs.db")
+conn = sqlite3.connect(dataPath)
 conn.text_factory = str
 
 # Create tables
 conn.execute('''CREATE TABLE IF NOT EXISTS logs (log_id INT, log_type INT, date TEXT)''')
 conn.execute('''CREATE TABLE IF NOT EXISTS keyvals (log_id INT, key TEXT, value TEXT)''')
-conn.execute('''CREATE TABLE IF NOT EXISTS tables_str (log_id INT, table_id TINYINT, table_col_name TEXT, table_row_id INT, value TEXT)''')
-conn.execute('''CREATE TABLE IF NOT EXISTS tables_num (log_id INT, table_id TINYINT, table_col_name TEXT, table_row_id INT, value DOUBLE)''')
+conn.execute('''CREATE TABLE IF NOT EXISTS tables (log_id INT, table_id TINYINT, table_col_name TEXT, table_row_id INT, value_str TEXT, value_num DOUBLE)''')
 
 # Remove old content
 conn.execute('''DELETE FROM logs''')
 conn.execute('''DELETE FROM keyvals''')
-conn.execute('''DELETE FROM tables_str''')
-conn.execute('''DELETE FROM tables_num''')
+conn.execute('''DELETE FROM tables''')
 
 try:
     while True:
@@ -132,10 +140,13 @@ try:
         # TODO: store date
         elif dateRegex.match(line):
             # Log type is parsed and stored as number
+            datePar = ' '.join(line.split()[:4])
+            datePar = dparser.parse(datePar)
+            
             log_type_b = line.find("0x")
             log_type_e = line[log_type_b:].find(" ")
             log_type = int(line[log_type_b:log_type_b+log_type_e], 0)
-            conn.execute('''INSERT INTO logs (log_id, log_type) VALUES (?, ?)''', [log_id, log_type] )
+            conn.execute('''INSERT INTO logs (log_id, log_type, date) VALUES (?, ?, ?)''', [log_id, log_type, datePar] )
             log_id += 1
             table_id = 1
 
